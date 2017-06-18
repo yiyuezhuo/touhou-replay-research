@@ -58,6 +58,7 @@ def decompress(buffer, decode, length):
 def decode(buffer, length, block_size, base, add):
     # buffer should be a bytearray instead of bytes
     assert isinstance(buffer, bytearray)
+    #print(len(buffer), length, block_size, base, add)
     tbuf = buffer.copy()
     p = 0
     left = length
@@ -65,6 +66,7 @@ def decode(buffer, length, block_size, base, add):
         left -= left % block_size
     left -= length & 1
     while left:
+        #print(left)
         if left < block_size:
             block_size = left
         tp1 = p + block_size - 1
@@ -92,10 +94,9 @@ def entry(file):
     return file, buffer, flength
 
         
-def test(path):
-    with open(path, 'rb') as f:
-        buffer = f.read()
-    flength = len(buffer)
+def test(file):
+    file, buffer, flength = entry(file)
+    
     length = unsigned_int(buffer, 0x1c)
     dlength = unsigned_int(buffer, 0x20)
     decodedata = bytearray(dlength)
@@ -105,9 +106,10 @@ def test(path):
     rlength = decompress(rawdata, decodedata, length)
     print(rlength)
     return decodedata
+    
 
 if __name__ == '__main__':
-    
+    '''
     #decodedata = test('replay/th10_02.rpy')
     path = 'replay/th10_02.rpy'
     buffer = bytearray(0x100000) # cofusing setting, it indicate some overflow error?
@@ -137,3 +139,4 @@ if __name__ == '__main__':
     assert rawdata == rawdata3
     rlength = decompress(rawdata, decodedata, length)
     assert decodedata == decodedata2
+    '''

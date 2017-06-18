@@ -20,8 +20,8 @@ def th10decodedata(file, buffer, flength):
     decodedata = bytearray(dlength)
     rawdata = bytearray(buffer[0x24:])
     
-    decode(rawdata, flength, 0x400, 0xaa, 0xe1)
-    decode(rawdata, flength, 0x80, 0x3d, 0x7a)
+    decode(rawdata, length, 0x400, 0xaa, 0xe1)
+    decode(rawdata, length, 0x80, 0x3d, 0x7a)
     #rlength = decompress(rawdata, decodedata, length)
     decompress(rawdata, decodedata, length)
 
@@ -32,8 +32,11 @@ def th10cut(decodedata):
     
     stagedata = 0x64
     stage = decodedata[0x4c]
-    score = list(range(stage))
-    faith = list(range(stage))
+    #score = list(range(stage))
+    #faith = list(range(stage))
+    score = list(range(6))
+    faith = list(range(6))
+    faith[0] = 5000
     
     for i in range(1, stage):
         stagedata += 0x1c4 + unsigned_int(decodedata, stagedata + 0x8)
@@ -88,7 +91,7 @@ def th10output(decodedata):
     faith = list(range(stage))
     
     output = []
-    raw_output = []
+    #raw_output = []
     
     #stagedata = 0x64
     for l in range(stage):
@@ -201,11 +204,56 @@ def _show(cut_dict, limit = 30):
             rd[key] = '...'
     return rd
     
+def test(file):
+    from utils import find_last_match
+    from common import entry
+    file, buffer, flength = entry(file)
+    
+    length = unsigned_int(buffer, 0x1c)
+    dlength = unsigned_int(buffer, 0x20)
+    decodedata = bytearray(dlength)
+    rawdata = bytearray(buffer[0x24:])
+    
+    
+    def assert_file_eq(obj, path):
+        from utils import find_last_match
+        with open(path,'rb') as f:
+            cont = f.read()
+        cut = min(len(obj),len(cont))
+        assert obj[:cut] == cont[:cut]
+    
+    #assert_file_eq(rawdata, '{}.raw.rawdata1'.format(file))
+    
+    decode(rawdata, length, 0x400, 0xaa, 0xe1)
+    
+    #assert_file_eq(rawdata, '{}.raw.rawdata2'.format(file))
+    
+    decode(rawdata, length, 0x80, 0x3d, 0x7a)
+    
+    #assert_file_eq(rawdata, '{}.raw.rawdata3'.format(file))
+    
+    decompress(rawdata, decodedata, length)
+    
+    assert_file_eq(decodedata, '{}.raw'.format(file))
+    
+    try:
+        assert_file_eq(decodedata, '{}.raw'.format(file))
+    except AssertionError:
+        rawdata = bytearray(buffer[0x24:])
+        
+        assert_file_eq(rawdata, '{}.raw.rawdata1'.format(file))
+        decode(rawdata, length, 0x400, 0xaa, 0xe1)
+        assert_file_eq(rawdata, '{}.raw.rawdata2'.format(file))
+        decode(rawdata, length, 0x80, 0x3d, 0x7a)
+        assert_file_eq(rawdata, '{}.raw.rawdata3'.format(file))
+
+    
+    print('test pass')
 
 
 if __name__ == '__main__':
     
-    from utils import diff2
+    from utils import diff2,replay_to_binary_seq
     def diff(a,b,raw = False):
         l = diff2(list(a),list(b))
         if not raw:
@@ -225,6 +273,14 @@ if __name__ == '__main__':
     th10_01 = _th10cut('replay/th10_01.rpy')
     th10_02 = _th10cut('replay/th10_02.rpy')
     th10_03 = _th10cut('replay/th10_03.rpy')
+    th10_null = _th10cut('replay/th10_null.rpy')
+    
+    l10 = replay_to_binary_seq(th10_01['stages'][0]['bin']['replay'])
+    l11 = replay_to_binary_seq(th10_01['stages'][1]['bin']['replay'])
+    l20 = replay_to_binary_seq(th10_02['stages'][0]['bin']['replay'])
+    l21 = replay_to_binary_seq(th10_02['stages'][1]['bin']['replay'])
+    ln = replay_to_binary_seq(th10_null['stages'][0]['bin']['replay'])
+    '''
     th10_04 = _th10cut('replay/th10_04.rpy')
     th10_05 = _th10cut('replay/th10_05.rpy')
     th10_06 = _th10cut('replay/th10_06.rpy')
@@ -256,3 +312,4 @@ if __name__ == '__main__':
     tud19901 = th10_ud1990['stages'][1]['bin']['tail']
     tud0e780 = th10_ud0e78['stages'][0]['bin']['tail']
     tud0e781 = th10_ud0e78['stages'][1]['bin']['tail']
+    '''
