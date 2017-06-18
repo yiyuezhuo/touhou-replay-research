@@ -9,11 +9,8 @@ Created on Sat Jun 17 19:31:00 2017
 
 from struct import unpack,pack
 from collections import Counter
+from utils import unsigned_int, bin32
 
-def unsigned_int(_bytes, pointer):
-    return unpack('I', _bytes[pointer:pointer+4])[0]
-def bin32(num):
-    return '{0:>32}'.format(bin(num)[2:]).replace(' ','0')
     
 _keys = [ 0xf0a1, 0xfca1, 0xfda1, 0xfda1, 0xfba1, 0x49a8, 0x4ca8, 0x49a8, 0xfaa1, 0x4aa8, 0x4ba8, 0x4aa8, 0xfba1, 0x49a8, 0x4ca8, 0x49a8 ]
 keys = [pack('I',key).decode('gbk')[0] for key in _keys]
