@@ -1,3 +1,4 @@
 *.raw
-*.rpy.*
+*.rpy*
 __pycache__
+example*

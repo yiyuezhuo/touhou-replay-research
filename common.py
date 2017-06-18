@@ -83,6 +83,15 @@ def decode(buffer, length, block_size, base, add):
             p += 1
         left -= block_size
         
+def entry(file):
+    buffer = bytearray(0x100000) # cofusing setting, it indicate some overflow error?
+    with open(file, 'rb') as f:
+        _buffer = f.read()
+    flength = len(_buffer)
+    buffer[:flength] = _buffer
+    return file, buffer, flength
+
+        
 def test(path):
     with open(path, 'rb') as f:
         buffer = f.read()
