@@ -9,6 +9,8 @@ from struct import pack, unpack
 
 def unsigned_int(_bytes, pointer):
     return unpack('I', _bytes[pointer:pointer+4])[0]
+def unsigned_char(_bytes, pointer):
+    return unpack('B', _bytes[pointer:pointer+1])[0]
 def signed_int(_bytes, pointer):
     return unpack('i', _bytes[pointer:pointer+4])[0]
 
@@ -70,6 +72,7 @@ def find_last_match(seq1, seq2):
 
 def replay_to_binary_seq(replay):
     '''
+    The below content is based on th10
     When frame(6 byte, 48 bit) is unpacked by `IH`
     000000000000000000000000010000000000000000000000
     ********************************                interger 32 binary(I)
@@ -79,7 +82,35 @@ def replay_to_binary_seq(replay):
                                *                    up(0-index -> 27)
                              *                      left(0-index -> 25)
                               *                     down(0-index -> 26)
-                            *                       right(0-index -> 24)        
+                            *                       right(0-index -> 24)
+    000000000001000000000000000101000000000000000000
+               *                                    press up(0-index -> 11)
+    000000000000000000000000000001000000000000010000
+                                               *    release up(0-index -> 43)
+    000000000010000000000000001001000000000000000000
+              *                                     press down
+    000000000000000000000000000001000000000000100000
+                                              *     release down
+        
+    000000000000000000000000000000010000000000000000
+                                   *                z(shot)(0-index -> 31)
+    000000000000000100000000000000010000000000000000
+                   *                                press z(0-index -> 15)
+    000000000000001000000000000000100000000000000000
+                                  *                 x(bomb)(0-index -> 30)
+                  *                                 press x(0-index -> 14)
+    000000000000010000000000000001000000000000000000
+                                 *                  shift(slow move)(0-index -> 29)
+                 *                                  press shift(0-index -> 13)
+    000000010000000000000001000000000000000000000000
+    000000000000000000000000000000000000000100000000
+    000000000000000000000000000100000000000000000000
+                           ***** ***                pressing ctrl, right, left, down, up, shift,x,z
+    000000000001000000000000000101000000000000000000
+           ***** ***                                press ctrl, right, left, down, up, shift,x,z
+    000000000000000000000000000001000000000000010000
+                                           ***** ***release ctrl, right,left,down,up,shift,x,z
+    
     '''
     assert len(replay) % 6 == 0
     frame = len(replay) // 6

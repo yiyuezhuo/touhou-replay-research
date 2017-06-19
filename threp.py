@@ -8,6 +8,7 @@ Created on Sun Jun 18 11:01:46 2017
 #from struct import unpack,pack
 from utils import signed_int
 from th10 import th10decode
+from th11 import th11decode
 from common import entry
 
 def run(file):
@@ -15,6 +16,8 @@ def run(file):
     tag = signed_int(buffer, 0)
     if tag == 0x72303174: # th10
         th10decode(file, buffer, flength)
+    elif tag == 0x72313174: # th11:
+        th11decode(file, buffer, flength)
     else:
         print("Not support format")
         

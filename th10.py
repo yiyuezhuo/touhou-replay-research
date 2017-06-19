@@ -5,7 +5,7 @@ Created on Sun Jun 18 11:02:19 2017
 @author: yiyuezhuo
 """
 
-from utils import unsigned_int,bin32,bin8
+from utils import unsigned_int,unsigned_char,bin32,bin8
 from struct import unpack,pack
 from common import decode,decompress
 from math import ceil
@@ -27,13 +27,24 @@ def th10decodedata(file, buffer, flength):
 
     return decodedata
     
-def th10cut(decodedata):
-    info = {'meta': decodedata[:0x64], 'stages': {}, 'stage':None}
+def th10cut(decodedata, verbose = True):
+    info = {'meta': decodedata[:0x64], 'stages': {}, 'stage':None,
+            'character': None, 'ctype': None, 'rank': None, 'clear': None}
+    
+    stage = decodedata[0x4c]
+    character = unsigned_char(decodedata, 0x50)
+    ctype = unsigned_char(decodedata, 0x54)
+    rank = unsigned_char(decodedata, 0x58)
+    clear = unsigned_char(decodedata, 0x5c)
+
+    info['stage'] = stage
+    info['character'] = character
+    info['ctype'] = ctype
+    info['rank'] = rank
+    info['clear'] = clear
     
     stagedata = 0x64
-    stage = decodedata[0x4c]
-    #score = list(range(stage))
-    #faith = list(range(stage))
+
     score = list(range(6))
     faith = list(range(6))
     faith[0] = 5000
@@ -44,9 +55,9 @@ def th10cut(decodedata):
         faith[i] = unsigned_int(decodedata, stagedata + 0x14)
     score[stage - 1] = unsigned_int(decodedata, 0x10)
     
-    stagedata = 0x64
     
-    info['stage'] = stage
+    stagedata = 0x64
+
     
     for l in range(stage):
         stage_info = {'score': None,'frame': None,'llength': None, 'faith':None,
@@ -62,8 +73,10 @@ def th10cut(decodedata):
             frame //= 2
         else:
             raise Exception('Unknow frame pattern')
-        print('score = {} | frame size = {} | stage length = {} '.format(score[l], frame, llength))
-        print('void frame = {} frame ratio = {} void frame2 = {}'.format(llength - frame*6, llength / frame, llength - frame*3))
+        
+        if verbose:
+            print('score = {} | frame size = {} | stage length = {} '.format(score[l], frame, llength))
+            #print('void frame = {} frame ratio = {} void frame2 = {}'.format(llength - frame*6, llength / frame, llength - frame*3))
 
         stage_info['score'] = score[l]
         stage_info['faith'] = faith[l]
@@ -82,8 +95,44 @@ def th10cut(decodedata):
     
     return info
     
-def th10output(decodedata):
-    info = th10cut(decodedata)
+def th10type(character, ctype, rank, clear):
+    # (unsigned_char*4) -> (string*4)
+    if character == 0:
+        character_s = 'Reimu'
+    elif character == 1:
+        character_s = 'Marisa'
+    else:
+        raise Exception("Unrecognized character {}".format(character))
+    if ctype == 0:
+        ctype_s = 'A'
+    elif ctype == 1:
+        ctype_s = 'B'
+    elif ctype == 2:
+        ctype_s = 'C'
+    else:
+        raise Exception("Unrecognized ctype {}".format(ctype))
+    if rank == 0:
+        rank_s = 'easy'
+    elif rank == 1:
+        rank_s = 'normal'
+    elif rank == 2:
+        rank_s = 'hard'
+    elif rank == 3:
+        rank_s = 'lunatic'
+    elif rank == 4:
+        rank_s = 'extra'
+    else:
+        raise Exception("Unrecognized rank {}".format(rank))
+    if clear == 8:
+        clear_s = 'all'
+    elif clear == 7:
+        clear_s = 'extra'
+    else:
+        clear_s = str(clear)
+    return character_s, ctype_s, rank_s, clear_s
+    
+def th10output(decodedata, verbose = True):
+    info = th10cut(decodedata, verbose = verbose)
     stage = info['stage']
     #score = info['score']
     #faith = info['faith']
@@ -92,6 +141,9 @@ def th10output(decodedata):
     
     output = []
     #raw_output = []
+    
+    character, ctype, rank, clear = th10type(info['character'], info['ctype'], info['rank'], info['clear'])
+    output.append([' '.join([character, ctype, rank, clear])])
     
     #stagedata = 0x64
     for l in range(stage):
@@ -102,9 +154,10 @@ def th10output(decodedata):
         
         replaydata = stage_info['bin']['replay']
         frame = stage_info['frame']
-        llength = stage_info['llength']
-        print('score = {} | frame size = {} | stage length = {} '.format(score[l], frame, llength))
-        print('void frame = {} frame ratio = {} void frame2 = {}'.format(llength - frame*6, llength / frame, llength - frame*3))
+        #llength = stage_info['llength']
+        #if verbose:
+        #    print('score = {} | frame size = {} | stage length = {} '.format(score[l], frame, llength))
+        #    print('void frame = {} frame ratio = {} void frame2 = {}'.format(llength - frame*6, llength / frame, llength - frame*3))
         skey = []
         #raw_output = []
         for i in range(frame):
@@ -274,12 +327,20 @@ if __name__ == '__main__':
     th10_02 = _th10cut('replay/th10_02.rpy')
     th10_03 = _th10cut('replay/th10_03.rpy')
     th10_null = _th10cut('replay/th10_null.rpy')
+    th10_z = _th10cut('replay/th10_z.rpy')
+    th10_ex = _th10cut('replay/th10_ex.rpy') # X
+    th10_ex2 = _th10cut('replay/th10_ex2.rpy') # shift
+    th10_ex3 = _th10cut('replay/th10_ex3.rpy') # ctrl
     
     l10 = replay_to_binary_seq(th10_01['stages'][0]['bin']['replay'])
     l11 = replay_to_binary_seq(th10_01['stages'][1]['bin']['replay'])
     l20 = replay_to_binary_seq(th10_02['stages'][0]['bin']['replay'])
     l21 = replay_to_binary_seq(th10_02['stages'][1]['bin']['replay'])
     ln = replay_to_binary_seq(th10_null['stages'][0]['bin']['replay'])
+    lz = replay_to_binary_seq(th10_z['stages'][0]['bin']['replay'])
+    lx = replay_to_binary_seq(th10_ex['stages'][0]['bin']['replay'])
+    ls = replay_to_binary_seq(th10_ex2['stages'][0]['bin']['replay'])
+    lc = replay_to_binary_seq(th10_ex3['stages'][0]['bin']['replay'])
     '''
     th10_04 = _th10cut('replay/th10_04.rpy')
     th10_05 = _th10cut('replay/th10_05.rpy')
