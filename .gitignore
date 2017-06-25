@@ -2,3 +2,5 @@
 *.rpy*
 __pycache__
 *.txt
+.ipynb_checkpoints
+other_data
