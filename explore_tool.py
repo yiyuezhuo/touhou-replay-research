@@ -158,7 +158,7 @@ def summary(info):
     for i in range(info['stage']):
         stage = info['stages'][i]
         print(stage['frame'],stage['score'])
-        
+'''
 def info_wrap(func = None, use_index = None):
     # ugly trick
     
@@ -183,6 +183,7 @@ def info_wrap(func = None, use_index = None):
             func = ___func
             return _func
         return __func
+'''
         
 def look_pressing(key, info, press = False):
     for i in range(info['stage']):
@@ -299,18 +300,79 @@ transform_int16 = transform_wrap(cache_int16,
                                  filter = lambda path:path.endswith('.rpy.json'),
                                  tast_desc = lambda path, target_path:'{} -> {}'.format(path,target_path))
 
-def look_pressing(key, info, press = False):
-    for i in range(info['stage']):
-        stage = info['stages'][i]
-        df = stage['replay']
-        groupby = df['{}_{}'.format('press' if press else 'pressing', key)].groupby(df.index.map(lambda t: t//60))
-        gs = groupby.sum()
-        #gs.plot()
-        plt.fill_between(np.arange(len(gs)),gs)
-        plt.ylim(-1,61)
-        plt.title('stage {}'.format(i+1))
-        #plt.legend()
-        plt.show()
-        
-def look_pressing_shift(info):
-    look_pressing('shift', info)
+
+def show_pressing_in_time(info_list, key, frame = True, second = 60):
+    # anyway... if frame is False, we will merge second ( perhap the second should be 'frames' ... ) frame into a item
+    frame_matrix = np.array([[info['stages'][i]['frame'] for i in range(6)] for info in info_list])
+
+    if frame:
+        for i,max_frame in enumerate(frame_matrix.max(axis=0)):
+            arr = np.zeros(max_frame)
+            for info in info_list:
+                add = np.zeros(max_frame)
+                ser = info['stages'][i]['replay'][key]
+                pressing = ser
+                add[:len(pressing)] = pressing
+                arr += add
+            plt.plot(arr)
+            plt.title('stage {} {} count'.format(i+1, key))
+            plt.show()
+    else:
+        for i,max_frame in enumerate(frame_matrix.max(axis=0)):
+            arr = np.zeros(max_frame//second+1)
+            for info in info_list:
+                add = np.zeros(max_frame//second+1)
+                ser = info['stages'][i]['replay'][key]
+                pressing = ser.groupby(ser.index.map(lambda t:t//second)).sum()
+                add[:len(pressing)] = pressing
+                arr += add
+            plt.plot(arr)
+            plt.title('stage {} {} count ({} frame)'.format(i+1, key, second))
+            plt.show()
+
+def show_pressing_in_time2(info_list, key, key2, frame = True, second = 60):
+    # anyway... if frame is False, we will merge second ( perhap the second should be 'frames' ... ) frame into a item
+    frame_matrix = np.array([[info['stages'][i]['frame'] for i in range(6)] for info in info_list])
+    
+    keys = [key,key2]
+
+    if frame:
+        for i,max_frame in enumerate(frame_matrix.max(axis=0)):
+            arr = np.zeros((2,max_frame))
+            for j in range(2):
+                for info in info_list:
+                    add = np.zeros(max_frame)
+                    ser = info['stages'][i]['replay'][keys[j]]
+                    pressing = ser
+                    add[:len(pressing)] = pressing
+                    arr[j,:] += add
+                
+            plt.plot(arr[0,:],label="{}".format(keys[0]),color='b')
+            plt.ylabel(keys[0],color='b')
+            plt.yticks(color='b')
+            plt.twinx()
+            plt.plot(arr[1,:],label="{}".format(keys[1]),color='r')
+            plt.ylabel(keys[1],color='r')
+            plt.yticks(color='r')
+            plt.title('stage {} count'.format(i+1))
+            plt.show()
+    else:
+        for i,max_frame in enumerate(frame_matrix.max(axis=0)):
+            arr = np.zeros((2,max_frame//second+1))
+            for j in range(2):
+                for info in info_list:
+                    add = np.zeros(max_frame//second+1)
+                    ser = info['stages'][i]['replay'][keys[j]]
+                    pressing = ser.groupby(ser.index.map(lambda t:t//second)).sum()
+                    add[:len(pressing)] = pressing
+                    arr[j,:] += add
+            
+            plt.plot(arr[0,:],label="{}".format(keys[0]),color='b')
+            plt.ylabel(keys[0],color='b')
+            plt.yticks(color='b')
+            plt.twinx()
+            plt.plot(arr[1,:],label="{}".format(keys[1]),color='r')
+            plt.ylabel(keys[1],color='r')
+            plt.yticks(color='r')
+            plt.title('stage {} count ({} frame)'.format(i+1, second))
+            plt.show()
