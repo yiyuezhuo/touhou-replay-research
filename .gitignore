@@ -5,3 +5,5 @@ __pycache__
 .ipynb_checkpoints
 other_data
 cache_*
+*.docx
+*.pdf
