@@ -4,3 +4,4 @@ __pycache__
 *.txt
 .ipynb_checkpoints
 other_data
+cache_*
