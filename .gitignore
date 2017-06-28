@@ -7,3 +7,6 @@ other_data
 cache_*
 *.docx
 *.pdf
+*.log
+*.doc
+*.aux
