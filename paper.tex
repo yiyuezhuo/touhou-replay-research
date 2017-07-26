@@ -11,10 +11,10 @@
 \maketitle
 \begin{abstract}
 
-摘要内容
+本文研究了东方系列弹幕游戏的操作序列，建立了基于贝叶斯推断的运用MCMC的仅根据操作序列对阶段进行分类的方法。
+并对玩家使用的策略进行识别。
 
 \textbf{关键字}: 贝叶斯推断，MCMC，游戏分析
-
 
 \end{abstract}
 
@@ -65,13 +65,13 @@
 \begin{verbatim}
 000000000000000000000000000100000000000000000000
                        ***** ***                 
-*标出的二进制位分别表示 这帧正在按着 ctrl, right, left, down, up, shift,x,z
+*标出的二进制位分别表示该帧正在按着 ctrl,right,left,down,up,shift,x,z
 000000000001000000000000000101000000000000000000
        ***** ***                                
-*标出的二进制位分别表示 这帧刚刚按下了 ctrl, right, left, down, up, shift,x,z
+*标出的二进制位分别表示该帧刚刚按下了 ctrl,right,left,down,up,shift,x,z
 000000000000000000000000000000000000000111110111
                                        ***** ***
-*标出的二进制位分别表示 这帧 刚刚松开 ctrl, right,left,down,up,shift,x,z
+*标出的二进制位分别表示该帧刚刚松开 ctrl,right,left,down,up,shift,x,z
 \end{verbatim}
                                        
 如上文所示，第一个数据块那个1表示该帧中玩家正在按up（方向键向上）键，
@@ -138,7 +138,7 @@
 \begin{minipage}[t]{0.5\linewidth}
 \centering
 \includegraphics[width=2.2in]{images/trace2dfull.png}
-\caption{该时间段完整2d轨迹图}
+\caption{同关卡全时间2d轨迹图}
 \end{minipage}
 \end{figure}
 
@@ -156,7 +156,7 @@
 \begin{minipage}[t]{0.5\linewidth}
 \centering
 \includegraphics[width=2.2in]{images/trace2dstage6.png}
-\caption{时刻2}
+\caption{同回放第六关轨迹}
 \end{minipage}
 \end{figure}
 
@@ -178,7 +178,7 @@
 \begin{minipage}[t]{0.5\linewidth}
 \centering
 \includegraphics[width=2.2in]{images/pressingShift1.png}
-\caption{按秒求和的}
+\caption{按秒求和后序列}
 \end{minipage}
 \end{figure}
 
@@ -258,22 +258,23 @@ x的按键情况也发生了很大变化。所以ctrl是指示阶段变化的很
 
 \section{统计分析}
 
-探索式分析提供的信息可以被进一步的精确统计分析更好的分析。
 
 \subsection{分界点问题}
 
+虽然ctrl是个有力的划分变量的只是变量，但既然阶段的存在是客观存在且同时影响四个变量，
+那么使用四个变量的信息将给出对阶段分界点更精确的信息。
 
 
 \subsubsection{模型设定}
 
-符号约定：
-
-下面均指在一个特定关卡内，由于内存限制没有做跨关卡的分析
+符号约定
 
 \begin{tabular}{c|c}
  \hline
  $N$ & 回放总数 \\
  $P$ & 阶段数 \\
+ $S$ & 策略数 \\
+ $s_i$ & 第i个回放采用的策略 \\
  $Sh_{it}$ & 第$i$个回放在第$t$秒的按住Shift的帧数 \\
  $Ct_{it}$ & 第$i$个回放在第$t$秒的按住Ctrl的帧数 \\
  $X_{it}$ & 第$i$个回放在第$t$秒的按住X的帧数 \\
@@ -281,27 +282,32 @@ x的按键情况也发生了很大变化。所以ctrl是指示阶段变化的很
  $d_{ip}$ & 第$i$个回放在第$p$阶段的持续秒数 \\
  $b_{ip}$ & 第$i$个回放$p$阶段的结束时间 \\
  $p_{it}$ & 第$i$个回放在第$t$秒处于的阶段 \\
+  D & 数据集 $D = \{ Sh_{it},Ct_{it},X_{it},move_{it} \quad i = 1,\dots,N \quad t = 1,\dots,P \}$\\
+  \hline
 \end{tabular}
 
 对联合概率的分层描述：
 
 \begin{align*} % *是去掉公式编号。。上次就被这个坑了
-& d_{ip} \sim N(\mu^d_i,\sigma^d_i) \quad i = 1,\dots,N \quad p = 1,\dots,P \\
+& d_{ip} \sim N(\mu^d_p,\sigma^d_p) \quad i = 1,\dots,N \quad p = 1,\dots,P \\
 & b_{ip} = \sum_{h=1}^p d_{ih} \\
 & p_{it} = \max( \{ p \mid t < b_{ip} \quad p = 1,\dots,P \} ) \\
-& \mu^{Sh}_p \sim Exp(1/\bar{\mu^{Sh}_p}) \quad p = 1,\dots,P \\
-& \mu^{Ct}_p \sim Exp(1/\bar{\mu^{Ct}_p}) \\
-& \mu^{X}_p \sim Exp(1/\bar{\mu^{X}_p}) \\
-& \mu^{move}_p \sim Exp(1/\bar{\mu^{move}_p}) \\
-& \sigma^{move}_p \sim Exp(1/\bar{\sigma^{move}_p}) \\
+& \mu^{Sh}_p \sim Exp(1/\bar{\mu}^{Sh}_p) \quad p = 1,\dots,P \\
+& \mu^{Ct}_p \sim Exp(1/\bar{\mu}^{Ct}_p) \\
+& \mu^{X}_p \sim Exp(1/\bar{\mu}^{X}_p) \\
+& \mu^{move}_p \sim Exp(1/\bar{\mu}^{move}_p) \\
+& \sigma^{move}_p \sim Exp(1/\bar{\sigma}^{move}_p) \\
 & Sh_{it} \sim Poi(\mu^{Sh}_{p_{it}}) \\
 & Ct_{it} \sim Poi(\mu^{Ct}_{p_{it}}) \\
 & X_{it} \sim Poi(\mu^{X}_{p_{it}}) \\
 & move_{it} \sim N(\mu^{move}_{p_{it}},\sigma^{move}_{p_{it}}) \\
 \end{align*}
 
-这里$\bar{\mu}^{Y}_{p}$,（$Y$可能为$Sh,Ct,X,move,d$等）为给定的参数。
-控制了随机参数$\mu^{Y}_p$的先验分布。它们采用指数分布是为了连续且保持正数性。
+其中$poi$指泊松分布，$Exp$指指数分布。$p_{it}$其实就是按所处阶段分类的形式写法，其对推断来了困难。
+
+这里$\bar{\mu}^{Y}_{p}$,（$Y$可能为$Sh,Ct,X,move,d$等）为给定的先验分布的参数。
+分层地控制了随机参数$\mu^{Y}_p$的先验分布。它们采用指数分布是为了连续且保持正数性。
+这些值以上面提到的的秒求和方法矩估计而得。
 $Sh_{ti},Ct_{it},X_{it}$服从泊松分布是因为取值为整数。
 
 该模型指定的四个变量$Sh,Ct,X,move$在给定其所在状态$p_{it}$下互相条件独立，同时在$i,t$内部上也独立。
@@ -313,6 +319,7 @@ $Sh_{ti},Ct_{it},X_{it}$服从泊松分布是因为取值为整数。
 
 \subsubsection{推断}
 
+下面均指在一个特定关卡内，由于内存限制没有做跨关卡的分析。
 
 为了增加运行效率和编写模型方便，使用了Edward，一个用来概率编程的Python库\cite{edward}。
 由于模型的复杂性，为了求解给定数据的隐变量分布与随机参数的后验分布，必须借助近似方法。
@@ -323,8 +330,141 @@ $Sh_{ti},Ct_{it},X_{it}$服从泊松分布是因为取值为整数。
 所以真正的ElementWise的Gibbs采样开销太高，故而它们都没有提供真正的Gibbs采样法。
 我们自己实现了一个在几个向量之间轮换采样的算法，可以说介于MH与Gibbs之间，但内存开销已经处于无法使用的临界点中。
 
+之后的proposal分布未经说明均为均值为上一次采样值的正态分布。MCMC的初始点均为对应先验分布的期望。迭代30000次。
+
+MCMC的有效性可以从轨迹是否收敛的到某些值附近看出
+
+\begin{figure}[H]
+\begin{minipage}[t]{0.5\linewidth}
+\centering
+\includegraphics[width=2.2in]{images/traceCtrl.png}
+\caption{$\mu_{Ct} \mid D $的轨迹}
+\end{minipage}%
+\begin{minipage}[t]{0.5\linewidth}
+\centering
+\includegraphics[width=2.2in]{images/traceShift.png}
+\caption{$\mu_{Sh} \mid D$的轨迹}
+\end{minipage}
+\end{figure}
+
+可以看出的确收敛到了某些值附近。
+
+取30000次迭代中的后15000次作为充分遍历的解，MH算法本身接受率略低，如下图所示：
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{images/traceTwice.png}
+\caption{第一个与第二个回放的第一阶段长度的轨迹,$d_{11},d_{12}$}
+\end{figure}
+
+但是由于可以合并所有回放的信息，仍然可以有足够的样本做出后验估计。如下图所示：
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{images/dhist.png}
+\caption{第一关第一阶段长度的后验分布}
+\end{figure}
+
+将各个阶段分界点（阶段求累积和）分布覆盖在按住shift与按住ctrl图上将看的清楚。
+
+\begin{figure}[H]
+\begin{minipage}[t]{0.5\linewidth}
+\centering
+\includegraphics[width=2.2in]{images/biHistShift.png}
+\caption{shift与分界点分布比较}
+\end{minipage}%
+\begin{minipage}[t]{0.5\linewidth}
+\centering
+\includegraphics[width=2.2in]{images/biHistCtrl.png}
+\caption{ctrl与分界点分布比较}
+\end{minipage}
+\end{figure}
+
+可以看出后验分布在光看shift与ctrl的话，所指示的分界点的中间位置，
+这意味着它同时吸收了两者（以及另外两个变量x与move）的信息。
 
 \subsection{策略识别}
+
+探索式分析指出了异质策略存在的可能性，之前的图表则显示出第一二个回放的的第一阶段时长两个隐变量的先验分布虽然相同，
+但在给定数据下呈现显著不同的后验分布。虽然这一异质性的捕捉是很好的，但是它们出自同一先验分布的假设可能并不有效，
+一个有趣的问题就是是否存在策略的分类，其使得对数据的拟合更加有效，同时也印证了之前的“刷分”与“速攻”讨论所暗示的可能。
+
+\subsubsection{模型设定}
+
+模型的主要变化就是让每个回放以一个离散概率从一组控制时长的随机参数中选择一组：
+
+\begin{align*} % *是去掉公式编号。。上次就被这个坑了
+& \mu^d_{sp} \sim N(\bar{\mu}^d_{sp},\bar{\sigma}^d_{sp}) \quad s = 1,\dots,S \\
+& w_s \sim N(0,1) \quad s = 1,\dots,S \\
+& WS = softmax(w_1,\dots,w_S) \\
+& P(s_i=s) = WS_s \\
+& d_{ip} \sim N(\mu^d_{s_i,p},\mu^d_{s_i,p} / \bar{c}) \quad i = 1,\dots,N \quad p = 1,\dots,P \\
+& b_{ip} = \sum_{h=1}^p d_{ih} \\
+& p_{it} = \max( \{ p \mid t < b_{ip} \quad p = 1,\dots,P \} ) \\
+& \mu^{Sh}_p \sim Exp(1/\bar{\mu}^{Sh}_p) \quad p = 1,\dots,P \\
+& \mu^{Ct}_p \sim Exp(1/\bar{\mu}^{Ct}_p) \\
+& \mu^{X}_p \sim Exp(1/\bar{\mu}^{X}_p) \\
+& \mu^{move}_p \sim Exp(1/\bar{\mu}^{move}_p) \\
+& \sigma^{move}_p \sim Exp(1/\bar{\sigma}^{move}_p) \\
+& Sh_{it} \sim Poi(\mu^{Sh}_{p_{it}}) \\
+& Ct_{it} \sim Poi(\mu^{Ct}_{p_{it}}) \\
+& X_{it} \sim Poi(\mu^{X}_{p_{it}}) \\
+& move_{it} \sim N(\mu^{move}_{p_{it}},\sigma^{move}_{p_{it}}) \\
+\end{align*}
+
+处于对无知的反映,新参数$\bar{\mu}^d_{sp}$是之前的$\bar{\mu}^d_{p}$加上独立的噪声生成的。
+
+其中$softmax(x_i)=exp(x_i)/(\sum_{i=1} exp(x_i))$.
+
+
+
+这里为了增加接受率使用了前面提到的MH算法与Gibbs算法的混合体进行估计。这里展示的情况设了三个策略，
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{images/classific3.png}
+\caption{$WS \mid D$(分类概率)轨迹}
+\end{figure}
+
+可以注意到红色类概率趋于0，这倾向于给出存在两个类的比较合适的结论。
+
+前四个阶段的持续时间（最后一个阶段的持续时间是上限减前四个的和，未标出）的轨迹
+
+\begin{figure}[H]
+\begin{minipage}[t]{0.5\linewidth}
+\centering
+\includegraphics[width=2.2in]{images/gb.png}
+\caption{$\mu^d_{s1} \mid D $的轨迹}
+\end{minipage}%
+\begin{minipage}[t]{0.5\linewidth}
+\centering
+\includegraphics[width=2.2in]{images/gb2.png}
+\caption{$\mu^d_{s2} \mid D$的轨迹}
+\end{minipage}
+\begin{minipage}[t]{0.5\linewidth}
+\centering
+\includegraphics[width=2.2in]{images/gb3.png}
+\caption{$\mu^d_{s3} \mid D$的轨迹}
+\end{minipage}%
+\begin{minipage}[t]{0.5\linewidth}
+\centering
+\includegraphics[width=2.2in]{images/gb4.png}
+\caption{$\mu^d_{s4} \mid D的轨迹$}
+\end{minipage}
+\end{figure}
+
+从图中可以看出被赋予概率更少的绿色类在除第二个阶段外，持续时间都明显高于红色类。
+如果要用“混关”与“刷分”的观点想的话，这反映了刷分（持续时间较短）的人可能占比较少。
+
+\section{结论}
+
+我们通过对弹幕游戏操作数据进行了处理，并做了探索式分析与统计分析。以此建立了弹幕操作序列的统计模型，
+可以以此作为更广泛的游戏类型的分段的分析框架。而混合策略则提供了一种对更广泛游戏的策略分析范式。
+
+不得不指出的是，本文的实验深受随机采样法“随机性”的困扰，反映了这种方法的使用方式还需要改进。
+比如时长选择正态分布看来是个失败的决定，本来认为其出现负值是有其意义的，但其意义带来了对称性，造成了识别的困难。
+这在最后的实验中也有所体现，似乎并没有收敛完全，不过内存并不足以支持更多的迭代，MCMC的计算开销也很大，
+采用我们的算法进行分层模型模拟30000轮需要2606s，虽然Edward自带的MH算法更快一些，但效果不佳。
 
 %参考文献
 \begin{thebibliography}{9}%宽度9
@@ -339,7 +479,258 @@ $Sh_{ti},Ct_{it},X_{it}$服从泊松分布是因为取值为整数。
 \newpage
 %附录
 \appendix
-附录内容
+
+所有分析相关的程序均在Jupyter notebook Python Kernal下运行。所有实验记录，图片与源代码和本文的tex源码可于
+作者卓越羿的github上获取（https://github.com/yiyuezhuo/touhou-replay-research），回放解析代码在脚注中已给出地址，
+附带数据仅包括用于分析的pickle解析过的数据与jupyter notebook文件，与
+附录中的代码仅包括调用Edward构造两个统计模型的核心代码，不可独立执行。
+
+分界点模型
+
+以下仅为核心定义代码。欲独立运行，用jupyter notebook打开model-baseline.ipynb。
+
+\begin{verbatim}
+
+# MODEL
+
+#durations = ed.models.Normal(loc = [80.0,51.0], scale=[3.0,10.0], sample_shape=replay_num) # 202 * 2 matrix
+durations = ed.models.Normal(loc = time_length[:,0], scale=time_length[:,1], sample_shape=replay_num) # 202 * 4 matrix
+breaks = tf.cumsum(durations, axis=1) # 202 * 4 matrix
+#_breaks = tf.transpose(tf.reshape(tf.tile(breaks,(stage_length, 1)),(stage_length,replay_num,2)),(1,2,0))  
+_breaks = tf.transpose(tf.reshape(tf.tile(breaks,(stage_length, 1)),(stage_length,replay_num,durations_num)),(1,2,0))  
+_mask = tf.where(_time_axis > _breaks, 
+                 tf.ones((replay_num, durations_num, stage_length),dtype=tf.int32), 
+                 tf.zeros((replay_num, durations_num, stage_length),dtype=tf.int32))
+index = tf.reduce_sum(_mask, axis=1)
+
+
+_shift_mu = meansd[:,0,0]
+_ctrl_mu  = meansd[:,1,0]
+_x_mu     = meansd[:,2,0]
+_move_mu  = meansd[:,3,0]
+_move_sd  = meansd[:,3,1]
+
+
+shift_mu = ed.models.Exponential(rate = 1/_shift_mu)
+ctrl_mu = ed.models.Exponential(rate = 1/_ctrl_mu)
+x_mu = ed.models.Exponential(rate = 1/_x_mu)
+move_mu = ed.models.Exponential(rate = 1/_move_mu) 
+move_sd = ed.models.Exponential(rate = 1/_move_sd) 
+
+def share_params_into_period(var, index):
+    var_list = []
+    for i in range(replay_num):
+        var_list.append(tf.gather(var,index[i]))
+    var_along_replay = tf.stack(var_list)
+    return var_along_replay
+
+shift_mu_time = share_params_into_period(shift_mu, index)
+ctrl_mu_time = share_params_into_period(ctrl_mu, index)
+x_mu_time = share_params_into_period(x_mu, index)
+move_mu_time = share_params_into_period(move_mu, index)
+move_sd_time = share_params_into_period(move_sd, index)
+
+pressing_shift = ed.models.Poisson(rate = shift_mu_time)
+pressing_ctrl = ed.models.Poisson(rate = ctrl_mu_time)
+pressing_x = ed.models.Poisson(rate = x_mu_time)
+move = ed.models.Normal(loc = shift_mu_time, scale = move_sd_time)
+
+# Inference
+T = 30000
+
+idurations = np.ones([T, replay_num, durations_num],dtype='float32')
+idurations[0,:,:] = np.array(time_length[:,0], dtype='float32')
+qdurations = ed.models.Empirical(tf.Variable(idurations))
+
+ishift_mu = np.ones([T,period_num],dtype='float32')
+ishift_mu[0,:] = _shift_mu
+qshift_mu = ed.models.Empirical(tf.Variable(ishift_mu))
+
+ictrl_mu = np.ones([T,period_num],dtype='float32')
+ictrl_mu[0,:] = _ctrl_mu
+qctrl_mu = ed.models.Empirical(tf.Variable(ictrl_mu))
+
+ix_mu = np.ones([T,period_num],dtype='float32')
+ix_mu[0,:] = _x_mu
+qx_mu = ed.models.Empirical(tf.Variable(ix_mu))
+
+imove_mu = np.ones([T,period_num],dtype='float32')
+imove_mu[0,:] = _move_mu
+qmove_mu = ed.models.Empirical(tf.Variable(imove_mu))
+
+imove_sd = np.ones([T,period_num],dtype='float32')
+imove_sd[0,:] = _move_sd
+qmove_sd = ed.models.Empirical(tf.Variable(imove_sd))
+
+
+# proposal variable
+
+gdurations = ed.models.Normal(loc = durations, scale = np.tile([0.1]*durations_num,[replay_num,1]).astype('float32'))
+
+poi_scale = 0.1 
+sd_scale = 0.1 
+
+gshift_mu = ed.models.Normal(loc = shift_mu, scale = [poi_scale]*period_num)
+gctrl_mu = ed.models.Normal(loc = ctrl_mu, scale = [poi_scale]*period_num)
+gx_mu = ed.models.Normal(loc = x_mu, scale = [poi_scale]*period_num)
+gmove_mu = ed.models.Normal(loc = move_mu, scale = [0.01]*period_num)
+gmove_sd = ed.models.Normal(loc = move_sd, scale = [sd_scale]*period_num)
+
+inference = ed.MetropolisHastings({durations: qdurations, 
+                                   shift_mu: qshift_mu, ctrl_mu: qctrl_mu, x_mu: qx_mu,move_mu: qmove_mu,move_sd: qmove_sd},
+                      proposal_vars = {durations: gdurations, 
+                                       shift_mu: gshift_mu, ctrl_mu: gctrl_mu, x_mu: gx_mu,move_mu: gmove_mu,move_sd: gmove_sd},
+                      data = {pressing_shift: stage[:,0,:], pressing_ctrl: stage[:,1,:], pressing_x: stage[:,2,:], move: stage[:,3,:]})
+					  
+inference.run()
+
+\end{verbatim}
+
+
+混合策略模型
+
+欲独立运行，用jupyter notebook打开model5.ipynb。
+
+\begin{verbatim}
+
+
+S = 3
+
+_idurations_loc_loc = np.tile(time_length[:,0],(S,1))
+_idurations_loc_scale = np.tile(time_length[:,1],(S,1))
+_idurations_loc_loc = np.random.normal(loc = _idurations_loc_loc, scale = 3.0).astype('float32')
+
+# Model
+
+
+
+durations_loc_param = Normal(loc = _idurations_loc_loc, scale = _idurations_loc_scale) 
+
+
+loc_weights = Normal(loc=np.zeros(S,dtype='float32'),scale=np.ones(S,dtype='float32'))
+loc_index = ed.models.Categorical(logits = loc_weights,sample_shape = replay_num)
+
+durations_loc = tf.gather(durations_loc_param, loc_index) 
+durations_scale =  durations_loc / 10.0 
+
+durations = ed.models.Normal(loc = durations_loc, scale=durations_scale) # 202 * 2 matrix # yep we remove the sample_shape to fit new extent
+
+
+breaks = tf.cumsum(durations, axis=1) # 202 * 4 matrix
+#_breaks = tf.transpose(tf.reshape(tf.tile(breaks,(stage_length, 1)),(stage_length,replay_num,2)),(1,2,0))  
+_breaks = tf.transpose(tf.reshape(tf.tile(breaks,(stage_length, 1)),(stage_length,replay_num,durations_num)),(1,2,0))  
+_mask = tf.where(_time_axis > _breaks, 
+                 tf.ones((replay_num, durations_num, stage_length),dtype=tf.int32), 
+                 tf.zeros((replay_num, durations_num, stage_length),dtype=tf.int32))
+index = tf.reduce_sum(_mask, axis=1)
+
+_shift_mu = meansd[:,0,0]
+_ctrl_mu  = meansd[:,1,0]
+_x_mu     = meansd[:,2,0]
+_move_mu  = meansd[:,3,0]
+_move_sd  = meansd[:,3,1] / 10
+
+
+shift_mu = ed.models.Exponential(rate = 1/_shift_mu)
+ctrl_mu = ed.models.Exponential(rate = 1/_ctrl_mu)
+x_mu = ed.models.Exponential(rate = 1/_x_mu)
+move_mu = ed.models.Exponential(rate = 1/_move_mu) 
+move_sd = ed.models.Exponential(rate = 1/_move_sd) 
+
+def share_params_into_period(var, index):
+    var_list = []
+    for i in range(replay_num):
+        var_list.append(tf.gather(var,index[i]))
+    var_along_replay = tf.stack(var_list)
+    return var_along_replay
+
+shift_mu_time = share_params_into_period(shift_mu, index)
+ctrl_mu_time = share_params_into_period(ctrl_mu, index)
+x_mu_time = share_params_into_period(x_mu, index)
+move_mu_time = share_params_into_period(move_mu, index)
+move_sd_time = share_params_into_period(move_sd, index)
+
+pressing_shift = ed.models.Poisson(rate = shift_mu_time)
+pressing_ctrl = ed.models.Poisson(rate = ctrl_mu_time)
+pressing_x = ed.models.Poisson(rate = x_mu_time)
+move = ed.models.Normal(loc = shift_mu_time, scale = move_sd_time)
+
+# Inference
+T = 30000
+
+
+idurations_loc_param = np.ones([T, S, durations_num],dtype='float32')
+idurations_loc_param[0,:,:] = _idurations_loc_loc #_idurations_loc_param
+qdurations_loc_param = ed.models.Empirical(tf.Variable(idurations_loc_param))
+
+
+iloc_weights = np.zeros([T,S],dtype='float32') 
+qloc_weights = ed.models.Empirical(tf.Variable(iloc_weights))
+
+ishift_mu = np.ones([T,period_num],dtype='float32')
+ishift_mu[0,:] = _shift_mu
+qshift_mu = ed.models.Empirical(tf.Variable(ishift_mu))
+
+ictrl_mu = np.ones([T,period_num],dtype='float32')
+ictrl_mu[0,:] = _ctrl_mu
+qctrl_mu = ed.models.Empirical(tf.Variable(ictrl_mu))
+
+ix_mu = np.ones([T,period_num],dtype='float32')
+ix_mu[0,:] = _x_mu
+qx_mu = ed.models.Empirical(tf.Variable(ix_mu))
+
+imove_mu = np.ones([T,period_num],dtype='float32')
+imove_mu[0,:] = _move_mu
+qmove_mu = ed.models.Empirical(tf.Variable(imove_mu))
+
+imove_sd = np.ones([T,period_num],dtype='float32')
+imove_sd[0,:] = _move_sd
+qmove_sd = ed.models.Empirical(tf.Variable(imove_sd))
+
+
+# proposal variable
+
+gdurations_loc_param = Normal(loc = durations_loc_param, scale = np.ones([S,durations_num],dtype='float32')*0.1)
+gloc_weights = Normal(loc = loc_weights, scale = np.ones(S,dtype='float32')*0.1)
+
+poi_scale = 0.1 
+sd_scale = 0.1 
+
+gshift_mu = ed.models.Normal(loc = shift_mu, scale = [poi_scale]*period_num)
+gctrl_mu = ed.models.Normal(loc = ctrl_mu, scale = [poi_scale]*period_num)
+gx_mu = ed.models.Normal(loc = x_mu, scale = [poi_scale]*period_num)
+gmove_mu = ed.models.Normal(loc = move_mu, scale = [0.01]*period_num)
+gmove_sd = ed.models.Normal(loc = move_sd, scale = [sd_scale]*period_num)
+
+# proposal variable
+
+#gdurations = ed.models.Normal(loc = durations, scale = np.tile([0.1,0.1],[replay_num,1]).astype('float32'))
+
+#gdurations_loc_param = Normal(loc = durations_loc_param, scale = [[0.1,0.1],[0.1,0.1],[0.1,0.1]])
+gdurations_loc_param = Normal(loc = durations_loc_param, scale = np.ones([S,durations_num],dtype='float32')*0.1)
+#gloc_weights = Normal(loc = loc_weights, scale = [0.1,0.1,0.1])
+gloc_weights = Normal(loc = loc_weights, scale = np.ones(S,dtype='float32')*0.1)
+
+poi_scale = 0.1 ]
+sd_scale = 0.1 
+
+gshift_mu = ed.models.Normal(loc = shift_mu, scale = [poi_scale]*period_num)
+gctrl_mu = ed.models.Normal(loc = ctrl_mu, scale = [poi_scale]*period_num)
+gx_mu = ed.models.Normal(loc = x_mu, scale = [poi_scale]*period_num)
+gmove_mu = ed.models.Normal(loc = move_mu, scale = [0.01]*period_num)
+gmove_sd = ed.models.Normal(loc = move_sd, scale = [sd_scale]*period_num)
+
+from metropolis_hastings_y import MetropolisHastingsY
+inference = MetropolisHastingsY({durations_loc_param: qdurations_loc_param, loc_weights: qloc_weights,
+                                   shift_mu: qshift_mu, ctrl_mu: qctrl_mu, x_mu: qx_mu,move_mu: qmove_mu,move_sd: qmove_sd},
+                      proposal_vars = {durations_loc_param: gdurations_loc_param, loc_weights: gloc_weights,
+                                       shift_mu: gshift_mu, ctrl_mu: gctrl_mu, x_mu: gx_mu,move_mu: gmove_mu,move_sd: gmove_sd},
+                      data = {pressing_shift: stage[:,0,:], pressing_ctrl: stage[:,1,:], pressing_x: stage[:,2,:], move: stage[:,3,:]})
+					  
+inference.run()
+
+\end{verbatim}
+
 
 
 \end{document}
